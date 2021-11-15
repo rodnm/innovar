@@ -1,0 +1,84 @@
+---
+title: "Article(LIS)"
+date: "6/10/2021"
+output: html_document
+---
+
+
+```{r,echo=F,message=F,warning=F}
+
+library(lis)
+library(sf)
+library(rgee)
+library(tidyverse)
+library(viridis)
+library(cowplot)
+
+ee_Initialize(user="user@gmail.com") # edit
+
+
+peru.region <-  Peru            %>% 
+                group_by(reg)   %>% 
+                summarise()     %>%
+                pol_as_ee(id = "reg",simplify = 100)
+
+
+peru.ndvi   <-  peru.region %>% 
+                get_vegetation(
+                from = "2018-01-01", to = "2019-12-31", 
+                band = "NDVI", fun = "mean")
+
+
+peru.def    <-  peru.region %>% 
+                get_def(
+                from = "2018-02-01", to = "2019-12-31")
+
+
+peru.pr     <-  peru.region %>% 
+                get_climate(
+                from = "2018-02-01", to = "2019-12-31",
+                by   = "month"     , band = "pr", fun = "mean")
+
+
+peru.ndvi.sf <- inner_join(Peru,peru.ndvi,c("reg"="reg"))
+peru.pr.sf   <- inner_join(Peru,peru.pr  ,c("reg"="reg"))
+peru.def.sf  <- inner_join(Peru,peru.def,c("reg"="reg"))
+
+
+
+
+```
+
+
+
+```{r,message=F,warning=F,fig.height=10,fig.width=15}
+
+
+
+pr.plot<-   peru.pr.sf %>% 
+            ggplot()                                                  +
+            geom_sf(aes(fill=`pr2019-01`))                            +
+            scale_fill_lis(discrete = FALSE,name="Precipitation")     +
+            theme_bw()
+
+
+
+
+ndvi.plot<- peru.ndvi.sf %>% 
+            ggplot()                                     +
+            geom_sf(aes(fill=`NDVI2019-01`))             +
+            scale_fill_lis(discrete = FALSE,name="NDVI") +
+            theme_bw()
+
+
+def.plot <-  peru.def.sf %>% 
+             ggplot()                                     +
+             geom_sf(aes(fill=Adef_2019))             +
+             scale_fill_lis(discrete = FALSE,name="Deforestation") +
+             theme_bw()
+
+
+
+plot_grid(pr.plot,ndvi.plot,def.plot,nrow = 1)
+```
+
